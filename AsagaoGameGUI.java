@@ -2,6 +2,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.Random;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class AsagaoGameGUI extends JFrame {
 
@@ -18,6 +23,7 @@ public class AsagaoGameGUI extends JFrame {
 
     boolean isDead = false;
     boolean isBloomed = false;
+    boolean showWaterMessage = false;
 
     LocalDate date = LocalDate.of(2026, 4, 1);
     Random random = new Random();
@@ -29,6 +35,7 @@ public class AsagaoGameGUI extends JFrame {
 
     JButton waterButton;
     JButton skipButton;
+    JButton resetButton;
 
     public AsagaoGameGUI() {
 
@@ -38,6 +45,9 @@ public class AsagaoGameGUI extends JFrame {
 
         createStartScreen();
         createGameScreen();
+
+        loadGame();
+        updateScreen();
 
         add(mainPanel);
 
@@ -79,41 +89,72 @@ public class AsagaoGameGUI extends JFrame {
 
         waterButton = new JButton("水をあげる");
         skipButton = new JButton("日付を進める");
+        resetButton = new JButton("リセット");
 
         waterButton.addActionListener(e -> {
 
             water += 5;
 
-            if (water > 100) {
-                water = 100;
-            }
+            showWaterMessage = true;
 
-            noWaterDays = 0;
+
 
             updateScreen();
+
+            saveGame();
         });
+        
 
         skipButton.addActionListener(e -> {
 
-           lastWater = water;
-           lastGrowthRate = getWaterGrowthRate(lastWater);
+           
+           day++;
 
            date = date.plusDays(1);
-           day++;
+           
 
            currentWeather = getWeather();
 
-           boolean showWaterMessage = false;
+           
 
            passOneDay();
 
+           showWaterMessage = false;
+
+           
+
            updateScreen();
+           saveGame();
         });
+
+        resetButton.addActionListener(e -> {
+
+    growth = 0;
+    water = 50;
+    day = 1;
+
+    noWaterDays = 0;
+
+    lastWater = 50;
+    lastGrowthRate = 1.0;
+
+    isDead = false;
+    isBloomed = false;
+
+    currentWeather = "晴れ";
+
+    date = LocalDate.of(2026, 4, 1);
+
+    saveGame();
+
+    updateScreen();
+});
 
         JPanel buttonPanel = new JPanel();
 
         buttonPanel.add(waterButton);
         buttonPanel.add(skipButton);
+        buttonPanel.add(resetButton);
 
         gamePanel.add(statusLabel, BorderLayout.NORTH);
         gamePanel.add(imageLabel, BorderLayout.CENTER);
@@ -165,6 +206,89 @@ public class AsagaoGameGUI extends JFrame {
             skipButton.setEnabled(false);
         }
     }
+    void saveGame() {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:asagao.db");
+
+        String sql = """
+                UPDATE asagao_status
+                SET day = ?,
+                    date = ?,
+                    growth = ?,
+                    water = ?,
+                    weather = ?,
+                    is_dead = ?,
+                    is_bloomed = ?
+                WHERE id = 1;
+                """;
+
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+
+        pstmt.setInt(1, day);
+        pstmt.setString(2, date.toString());
+        pstmt.setDouble(3, growth);
+        pstmt.setInt(4, water);
+        pstmt.setString(5, currentWeather);
+        pstmt.setInt(6, isDead ? 1 : 0);
+        pstmt.setInt(7, isBloomed ? 1 : 0);
+
+        pstmt.executeUpdate();
+
+        pstmt.close();
+        conn.close();
+
+        System.out.println("セーブしました");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+void loadGame() {
+
+    try {
+
+        Connection conn = DriverManager.getConnection(
+                "jdbc:sqlite:asagao.db"
+        );
+
+        Statement stmt = conn.createStatement();
+
+        ResultSet rs = stmt.executeQuery(
+                "SELECT * FROM asagao_status WHERE id = 1"
+        );
+
+        if (rs.next()) {
+
+            day = rs.getInt("day");
+
+            date = LocalDate.parse(
+                    rs.getString("date")
+            );
+
+            growth = rs.getDouble("growth");
+
+            water = rs.getInt("water");
+
+            currentWeather = rs.getString("weather");
+
+            isDead = rs.getInt("is_dead") == 1;
+
+            isBloomed = rs.getInt("is_bloomed") == 1;
+        }
+
+        rs.close();
+        stmt.close();
+        conn.close();
+
+        System.out.println("ロード成功");
+
+    } catch (Exception e) {
+
+        e.printStackTrace();
+    }
+}
+
 
     void passOneDay() {
 
