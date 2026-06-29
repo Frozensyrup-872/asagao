@@ -39,9 +39,11 @@ public class AsagaoGameGUI extends JFrame {
 
     public AsagaoGameGUI() {
 
+        
         setTitle("あさがお育成ゲーム");
-        setSize(900, 520);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+setSize(900, 520);
+setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         createStartScreen();
         createGameScreen();
@@ -58,23 +60,51 @@ public class AsagaoGameGUI extends JFrame {
 
     void createStartScreen() {
 
-        JPanel startPanel = new JPanel(new BorderLayout());
+    JPanel startPanel = new JPanel() {
 
-        JLabel startImage = new JLabel(new ImageIcon("start.jpg"));
-        startImage.setHorizontalAlignment(JLabel.CENTER);
+        Image background = new ImageIcon("start.jpg").getImage();
 
-        JButton startButton = new JButton("はじめる");
-        startButton.setFont(new Font("SansSerif", Font.BOLD, 30));
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
 
-        startButton.addActionListener(e -> {
-            cardLayout.show(mainPanel, "GAME");
-        });
+            g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
+        }
+    };
 
-        startPanel.add(startImage, BorderLayout.CENTER);
-        startPanel.add(startButton, BorderLayout.SOUTH);
+    startPanel.setLayout(null);
 
-        mainPanel.add(startPanel, "START");
-    }
+    JButton startButton = new JButton();
+
+    startButton.setOpaque(false);
+    startButton.setContentAreaFilled(false);
+    startButton.setBorderPainted(false);
+    startButton.setFocusPainted(false);
+
+    startButton.addActionListener(e -> {
+        cardLayout.show(mainPanel, "GAME");
+    });
+
+    startPanel.add(startButton);
+
+    startPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+        @Override
+        public void componentResized(java.awt.event.ComponentEvent e) {
+
+            int w = startPanel.getWidth();
+            int h = startPanel.getHeight();
+
+            startButton.setBounds(
+                    (int)(w * 0.35),
+                    (int)(h * 0.448),
+                    (int)(w * 0.32),
+                    (int)(h * 0.21)
+            );
+        }
+    });
+
+    mainPanel.add(startPanel, "START");
+}
 
     void createGameScreen() {
 
@@ -87,7 +117,7 @@ public class AsagaoGameGUI extends JFrame {
         imageLabel = new JLabel();
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        waterButton = new JButton("水をあげる");
+        waterButton = new JButton(new ImageIcon("waterIcon.png"));
         skipButton = new JButton("日付を進める");
         resetButton = new JButton("リセット");
 
@@ -442,25 +472,25 @@ void loadGame() {
     String getGrowthImage() {
 
         if (growth < 10) {
-            return "normal.jpg";
+            return "朝顔/1.png";
         } else if (growth < 20) {
-            return "sprout.png";
+            return "朝顔/2.png";
         } else if (growth < 30) {
-            return "futaba.png";
+            return "朝顔/3.png";
         } else if (growth < 40) {
-            return "small.png";
+            return "朝顔/4.png";
         } else if (growth < 50) {
-            return "grow.png";
+            return "朝顔/5.png";
         } else if (growth < 60) {
-            return "vine.png";
+            return "朝顔/6.png";
         } else if (growth < 70) {
-            return "leaf.png";
+            return "朝顔/7.png";
         } else if (growth < 80) {
-            return "bud.png";
+            return "朝顔/8.png";
         } else if (growth < 90) {
-            return "flower_bud.png";
+            return "朝顔/9.png";
         } else if (growth < 100) {
-            return "flower.png";
+            return "朝顔/10.png";
         } else {
             return "fullflower.png";
         }
